@@ -117,8 +117,12 @@ final Node<K,V>[] resize() {
         // 设置新的阈值为默认负载因子 * 默认初始容量（这种情况一般出现在新new HashMap然后初次put的时候）
         newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
     }
+    // 如果新的容量等于0
     if (newThr == 0) {
+        // ft = 新的容量 * 负载因子
         float ft = (float)newCap * loadFactor;
+        // 校验新的容量是否小于最大容量 且 ft是否小于最大容量
+        // 如果是，则是ft，如果不是，则是Integer的最大值
         newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ?
                     (int)ft : Integer.MAX_VALUE);
     }
