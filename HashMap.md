@@ -30,6 +30,9 @@ static final int MIN_TREEIFY_CAPACITY = 64;
 ~~~
 
 ## PUT方法
+
+可以参考链接：
+https://blog.csdn.net/lukabruce/article/details/98033819
 ~~~ java
 
 public V put(K key, V value) {
@@ -100,10 +103,12 @@ final Node<K,V>[] resize() {
             // 这个时候就不进行扩容，就直接返回原来的数组（扩无可扩了）
             return oldTab;
         }
-        // 如果不是，那么就设定新的大小为旧的大小的两倍。并且校验是否超过了最大容量并且校验就旧的大小是否超过了初始容量16
+        // 如果不是，那么就设定新的大小为旧的大小的两倍。
+        // 校验是否超过了最大容量并且校验就旧的大小是否超过了初始容量16
         else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY &&
                     oldCap >= DEFAULT_INITIAL_CAPACITY)
-            // 并且设定新的阈值是旧的阈值的两倍
+            // 如果新的容量小于最大容量 且 旧的容量大于初始值。则设定新的阈值为旧的阈值的两倍
+            // 这里的两倍就是相当于 新的容量 * 负载因子。因为左移的效率更高
             newThr = oldThr << 1; // double threshold
     }
     // 如果旧的容量不大于0且旧的阈值大于0
@@ -122,40 +127,75 @@ final Node<K,V>[] resize() {
         // ft = 新的容量 * 负载因子
         float ft = (float)newCap * loadFactor;
         // 校验新的容量是否小于最大容量 且 ft是否小于最大容量
-        // 如果是，则是ft，如果不是，则是Integer的最大值
+        // 如果是，则新的阈值是ft（即新的容量 * 负载因子），如果不是，则是Integer的最大值
         newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ?
                     (int)ft : Integer.MAX_VALUE);
     }
+    // 将新的阈值进行赋值操作
     threshold = newThr;
     @SuppressWarnings({"rawtypes","unchecked"})
+        // 定义一个新的数组，（新的数组其实就是扩容的数组后的数组）
         Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
+    // 将新定义的数组赋值给数组
     table = newTab;
+    // 如果就得数组不为null，那还需要将原数组copy过来。如果是null，那么就直接将新数组就返回了
     if (oldTab != null) {
+        // 遍历
         for (int j = 0; j < oldCap; ++j) {
+            // 声明一个节点e
             Node<K,V> e;
+            // 获取旧数组的对应节点位置，判断是否为null
             if ((e = oldTab[j]) != null) {
+                // 如果不为null，则将旧的数组的这个节点置为null（置为null的目的是方便GC？）
                 oldTab[j] = null;
+                // 校验下一个节点是不是null
                 if (e.next == null)
+                    // e.hash是算出hash值。然后与(newCap -1)进行与操作。然后确定这个Node的新位置
+                    // 进行与操作的原因是： 算出的hash值可能超过索引的最大值。在进行与操作之后，就不会超过最大索引了
+                    // 例如：容量为16的情况下,e.hash为17，直接放置就会索引越界异常。单将17&(16-1)=10001&1111=1
+                    // &是与操作符，一假为假，全真才是真：1&0=0,1&1=1,0&0=0,0&1=0;有一个0就是假，全是1才是1
                     newTab[e.hash & (newCap - 1)] = e;
+                // 如果当前节点是树形节点
                 else if (e instanceof TreeNode)
+                    // 那么就树进行分割操作
                     ((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
+                // 既不是树又不是null,则代表next有值得情况下
                 else { // preserve order
+                    // 定义低位的头和低位的尾
                     Node<K,V> loHead = null, loTail = null;
+                    // 定义高位的头和高位的尾
                     Node<K,V> hiHead = null, hiTail = null;
                     Node<K,V> next;
+                    // 重要！！！
+                    // 将同一桶中的元素根据(e.hash & oldCap)是否为0进行分割，分成两个不同的链表，完成rehash
+                    // 通过下面的1.和2.完成了分割。
                     do {
+                        // 获取e的next节点
                         next = e.next;
+                        // 当e.hash小于oldCap的时候(1.)
+                        // =0就是索引不变的链表
                         if ((e.hash & oldCap) == 0) {
+                            // 如果低位的尾是null
                             if (loTail == null)
+                                // 则将e设定为低位的头
                                 loHead = e;
+                            // 如果低位的尾不是null
                             else
+                                // 则将e设定为低位的尾的下一个节点
                                 loTail.next = e;
+                            // 将e设定为低位的尾
                             loTail = e;
                         }
+                        // 如果e.hash不小于oldCap的时候（2.）、
+                        // !=0就是索引变化的链表
                         else {
+                            // 如果高位的头是null
                             if (hiTail == null)
+                                // 设定e是高位的头
                                 hiHead = e;
+                            // 否则
                             else
+                                // 设定高位尾的下一个节点是e
                                 hiTail.next = e;
                             hiTail = e;
                         }
