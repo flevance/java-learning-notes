@@ -33,6 +33,7 @@ static final int MIN_TREEIFY_CAPACITY = 64;
 
 可以参考链接：
 https://blog.csdn.net/lukabruce/article/details/98033819
+
 ~~~ java
 
 public V put(K key, V value) {
@@ -168,26 +169,35 @@ final Node<K,V>[] resize() {
                     Node<K,V> next;
                     // 重要！！！
                     // 将同一桶中的元素根据(e.hash & oldCap)是否为0进行分割，分成两个不同的链表，完成rehash
-                    // 通过下面的1.和2.完成了分割。
+                    // (最开始的时候是与old-1进行与操作，决定了原来的位置，现在与old进行与操作。所以根据结构来算，要不就是原先的数不动，要不就是变成了原先的二倍)
+                    // 举个例子：
+                    // 00101 和 10101 与 (old-1)即 1111 = 101
+                    // 但是：当 00101 和 10101 与 old （即10000） 进行与操作时：
+                    // 00101 & 10000 = 00000 = 0
+                    // 10101 & 10000 = 10000 != 0
+                    // 通过这个操作，就完成了分割（就是下面1.2.两个操作）
                     do {
                         // 获取e的next节点
                         next = e.next;
-                        // 当e.hash小于oldCap的时候(1.)
-                        // =0就是索引不变的链表
+                        // 当e.hash与oldCap进行与操作
+                        // (1.)与操作的结果=0就是索引不变的链表（lo）
                         if ((e.hash & oldCap) == 0) {
-                            // 如果低位的尾是null
-                            if (loTail == null)
-                                // 则将e设定为低位的头
+                            // 如果低位链表的尾是null(即代表现在的这个链表是不是空的)
+                            if (loTail == null){
+                                 // 如果为空的，就把这个节点添加在头的位置
                                 loHead = e;
-                            // 如果低位的尾不是null
-                            else
-                                // 则将e设定为低位的尾的下一个节点
+                            }   
+                            // 如果不是空的
+                            else{
+                                // 那么就讲这个节点添加在尾部节点的下一个位置
                                 loTail.next = e;
-                            // 将e设定为低位的尾
+                            }
+
+                            // 然后就将loTail节点后移一个位置，指向了原先节点的loTail.next
+                            // 可以理解为：loTail = loTail.next
                             loTail = e;
                         }
-                        // 如果e.hash不小于oldCap的时候（2.）、
-                        // !=0就是索引变化的链表
+                        // （2.）与操作的结果!=0就是索引变化的链表(hi)
                         else {
                             // 如果高位的头是null
                             if (hiTail == null)
