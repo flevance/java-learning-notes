@@ -78,7 +78,7 @@ CREATE RETENTION POLICY "on_year" ON "database_name" DURATION 52w REPLICATION 1 
 * 数据保留策略的网址介绍：https://www.cnblogs.com/ilifeilong/p/12746149.html
 * 一些使用注意事项：https://developer.aliyun.com/article/758923?spm=a2c6h.14164896.0.0.2d946b37xSY3X7
 * 性能和调优：https://blog.csdn.net/eric_sunah/article/details/76274188?utm_medium=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-1.control&depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-1.control
-
+* 一些查询语法注意事项：https://blog.csdn.net/lifen0908/article/details/105293839/
 
 
 （一个入库，一个查询）
