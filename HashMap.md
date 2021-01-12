@@ -99,7 +99,7 @@ final Node<K,V>[] resize() {
     if (oldCap > 0) {
         // 则判断旧的大小是否超过了最大值（2 ^ 32 次幂）
         if (oldCap >= MAXIMUM_CAPACITY) {
-            // 如果是，就给阈值设定为Integer的最大值
+            // 如果为TRUE，就给阈值设定为Integer的最大值
             threshold = Integer.MAX_VALUE;
             // 这个时候就不进行扩容，就直接返回原来的数组（扩无可扩了）
             return oldTab;
@@ -209,19 +209,26 @@ final Node<K,V>[] resize() {
                                 hiTail.next = e;
                             hiTail = e;
                         }
+                        // 遍历直到最后一个节点为止
                     } while ((e = next) != null);
+                    // 如果低位的链表不是null
                     if (loTail != null) {
+                        // 那么久设定低位链表的next值为null
                         loTail.next = null;
+                        // 将低位的链表保存在原先位置上
                         newTab[j] = loHead;
                     }
+                    // 同理，对高位链表也做相同的判断
                     if (hiTail != null) {
                         hiTail.next = null;
+                        // 将高位链表的位置变为当前位置+旧容量的位置
                         newTab[j + oldCap] = hiHead;
                     }
                 }
             }
         }
     }
+    // 将新的数组进行返回
     return newTab;
 }
 ~~~
