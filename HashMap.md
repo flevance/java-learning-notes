@@ -41,12 +41,19 @@ public V put(K key, V value) {
 }
 
 final V putVal(int hash, K key, V value, boolean onlyIfAbsent, boolean evict) {
+    // 定义一个table数组用来存放原先的Map中的所有元素，定义一个p的数据节点，一个int n ,一个int i 
     Node<K,V>[] tab; Node<K,V> p; int n, i;
+    // 如果现有的table数组为null，或者tab数组的大小是0，这个时候就执行resize方法
+    // resize()执行的结果是，会创建数组赋值给tab，数组大小cap为16，thr阈值为12
     if ((tab = table) == null || (n = tab.length) == 0)
         // resize()方法是根据已有的元素来重新获tab数组取大小
         n = (tab = resize()).length;
+    // 通过(n - 1) & hash，判断得到了该key应该在数组中存放的位置
+    // 判断数据的该节点是否为存在元素
     if ((p = tab[i = (n - 1) & hash]) == null)
+        // 如果不存在元素，则创建一个Node放置在该位置
         tab[i] = newNode(hash, key, value, null);
+    // else代表了该节点已经存在元素。这个时候就会形成链表或者是红黑树
     else {
         Node<K,V> e; K k;
         if (p.hash == hash &&
