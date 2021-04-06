@@ -31,6 +31,11 @@ static final int MIN_TREEIFY_CAPACITY = 64;
 
 ## PUT方法
 
+在Put的时候，首先根据key获取到该key在tab数组中对应的位置（tab[(n - 1) & hash]。  
+然后判断数组中的该位置是否存在Node元素：  
+    如果不存在，就讲vlue和key形成Node节点放置在该位置  
+    如果已经存在Node元素，这个是否就形成链表。如果链表中的数据比较多（>树化阈值8），则会进行树化形成红黑树  
+
 可以参考链接：
 https://blog.csdn.net/lukabruce/article/details/98033819
 
@@ -55,7 +60,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent, boolean evict) {
         tab[i] = newNode(hash, key, value, null);
     // else代表了该节点已经存在元素。这个时候就会形成链表或者是红黑树
     else {
-        // TODO 形成共黑叔，这里可能有些复杂，等以后有时间了详细去看看
+        
         Node<K,V> e; K k;
         if (p.hash == hash &&
             ((k = p.key) == key || (key != null && key.equals(k))))
@@ -66,6 +71,8 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent, boolean evict) {
             for (int binCount = 0; ; ++binCount) {
                 if ((e = p.next) == null) {
                     p.next = newNode(hash, key, value, null);
+                    // 如果长度大于了树化阈值，这里就进行树化操作（树化阈值为8）
+                    // TODO 形成共黑叔，这里可能有些复杂，等以后有时间了详细去看看
                     if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
                         treeifyBin(tab, hash);
                     break;
@@ -239,4 +246,123 @@ final Node<K,V>[] resize() {
     // 将新的数组进行返回
     return newTab;
 }
+~~~
+
+## GET方法
+
+参数为key，首先根据key计算出Hash值，然后找到这个key所对应的Node节点，然后再得到这个节点所对应的值
+
+~~~ java
+// 参数为key，返回值为value对应的泛型，如果没有对应的key，则返回null
+public V get(Object key) {
+    // 声明一个Node节点，用来接收getNode的值
+    Node<K,V> e;
+    // Node节点是否为null，如果为null，则返回null,如果不为null，则将Node所对应的value进行返回
+    return (e = getNode(hash(key), key)) == null ? null : e.value;
+}
+
+
+final Node<K,V> getNode(int hash, Object key) {
+    // 声明tab数组，声明first节点和e节点，定义n和key的泛型对象
+    Node<K,V>[] tab; Node<K,V> first, e; int n; K k;
+    // 将Map自带的table数组赋值给tab，数组的大小赋值给n.将对应位置的第一个Node赋值给first
+    // tab[(n - 1) & hash]即找到hash值在table数组中所对应的位置（这里可以看看put方法，在放置的时候就是按照这个方式来进行放置的）
+    if ((tab = table) != null && (n = tab.length) > 0 &&
+        (first = tab[(n - 1) & hash]) != null) {
+        // 找到数组对应的位置的Node元素，校验hash值是否相等。并校验key的对象和Node节点的对象是否相等
+        // 首先比较==再比较equals，这里可能就涉及到一个优化的问题。==效率更高，如果==为true，就需要判断equals
+        if (first.hash == hash && // always check first node
+            ((k = first.key) == key || (key != null && key.equals(k))))
+            // 如果为TRUE，则返回first节点
+            return first;
+        // 如果first节点不相等，则判断是否有next节点。
+        if ((e = first.next) != null) {
+            // 如果有，则判断first节点是否是树状结构
+            if (first instanceof TreeNode)
+                // 如果是，则进行对树状节点进行遍历取值
+                return ((TreeNode<K,V>)first).getTreeNode(hash, key);
+            // 如果有，且不是树状节点，则进行遍历
+            do {
+                // 依次向下遍历，知道找到对应的key，然后将结果返回
+                if (e.hash == hash &&
+                    ((k = e.key) == key || (key != null && key.equals(k))))
+                    return e;
+            } while ((e = e.next) != null);
+        }
+    }
+    // 所有条件都不满足或者都不对，则返回null
+    return null;
+}
+~~~
+
+## Remove方法
+
+remove方法
+
+~~~ java
+// remove方法，传入的为需要remove的key
+public V remove(Object key) {
+    // 定义一个Node节点
+    Node<K,V> e;
+    return (e = removeNode(hash(key), key, null, false, true)) == null ?
+        null : e.value;
+}
+
+/**
+     * Map 移除的具体实现放
+     *
+     * @param hash 需要移除的key的Hash值
+     * @param key 需要移除的key
+     * @param value 根据matchValue进行匹配，如果matchValue为true，则需要将value进行匹配。否则就忽略
+     * @param matchValue 如果为true，则需要将value进行比较是否相等
+     * @param movable 如果为false，则在删除时不要移动其他节点
+     * @return 这个节点，或者是null
+     */
+final Node<K,V> removeNode(int hash, Object key, Object value,
+                               boolean matchValue, boolean movable) {
+    // 定义tab数组，定义Node节点p，定义tab数组的长度为n，定义索引index
+    Node<K,V>[] tab; Node<K,V> p; int n, index;
+    // 获取table作为tab,数组的长度为n,p为该key对应的hash所在tab中的位置。index为索引
+    if ((tab = table) != null && (n = tab.length) > 0 &&
+        (p = tab[index = (n - 1) & hash]) != null) {
+        // 声明一个node节点，一个e节点，和k，v
+        Node<K,V> node = null, e; K k; V v;
+        // 校验该节点的hash是否相等，且key是否相等
+        if (p.hash == hash &&
+            ((k = p.key) == key || (key != null && key.equals(k))))
+            // 如果相等，则将p节点赋值给node节点
+            node = p;
+        // 如果不相等，则继续向下遍历，直到相等找到key对应的Node节点并赋值给node
+        else if ((e = p.next) != null) {
+            if (p instanceof TreeNode)
+                node = ((TreeNode<K,V>)p).getTreeNode(hash, key);
+            else {
+                do {
+                    if (e.hash == hash &&
+                        ((k = e.key) == key ||
+                            (key != null && key.equals(k)))) {
+                        node = e;
+                        break;
+                    }
+                    p = e;
+                } while ((e = e.next) != null);
+            }
+        }
+        if (node != null && (!matchValue || (v = node.value) == value ||
+                                (value != null && value.equals(v)))) {
+            if (node instanceof TreeNode)
+                ((TreeNode<K,V>)node).removeTreeNode(this, tab, movable);
+            else if (node == p)
+                tab[index] = node.next;
+            else
+                p.next = node.next;
+            ++modCount;
+            --size;
+            afterNodeRemoval(node);
+            return node;
+        }
+    }
+    return null;
+}
+
 ~~~
