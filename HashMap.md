@@ -55,6 +55,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent, boolean evict) {
         tab[i] = newNode(hash, key, value, null);
     // else代表了该节点已经存在元素。这个时候就会形成链表或者是红黑树
     else {
+        // TODO 形成共黑叔，这里可能有些复杂，等以后有时间了详细去看看
         Node<K,V> e; K k;
         if (p.hash == hash &&
             ((k = p.key) == key || (key != null && key.equals(k))))
