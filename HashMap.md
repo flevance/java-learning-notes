@@ -49,7 +49,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent, boolean evict) {
     // 定义一个table数组用来存放原先的Map中的所有元素，定义一个p的数据节点，一个int n ,一个int i 
     Node<K,V>[] tab; Node<K,V> p; int n, i;
     // 如果现有的table数组为null，或者tab数组的大小是0，这个时候就执行resize方法
-    // resize()执行的结果是，会创建数组赋值给tab，数组大小cap为16，thr阈值为12
+    // resize()执行的结果是，会创建数组指向tab，数组大小cap为16，thr阈值为12
     if ((tab = table) == null || (n = tab.length) == 0)
         // resize()方法是根据已有的元素来重新获tab数组取大小
         n = (tab = resize()).length;
@@ -147,12 +147,12 @@ final Node<K,V>[] resize() {
         newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ?
                     (int)ft : Integer.MAX_VALUE);
     }
-    // 将新的阈值进行赋值操作
+    // 将新的阈值进行指向阈值
     threshold = newThr;
     @SuppressWarnings({"rawtypes","unchecked"})
         // 定义一个新的数组，（新的数组其实就是扩容的数组后的数组）
         Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
-    // 将新定义的数组赋值给数组
+    // 将新定义的数组指向table
     table = newTab;
     // 如果就得数组不为null，那还需要将原数组copy过来。如果是null，那么就直接将新数组就返回了
     if (oldTab != null) {
@@ -265,7 +265,7 @@ public V get(Object key) {
 final Node<K,V> getNode(int hash, Object key) {
     // 声明tab数组，声明first节点和e节点，定义n和key的泛型对象
     Node<K,V>[] tab; Node<K,V> first, e; int n; K k;
-    // 将Map自带的table数组赋值给tab，数组的大小赋值给n.将对应位置的第一个Node赋值给first
+    // 将Map自带的table数组指向tab，数组的大小指向n.将对应位置的第一个Node指向first
     // tab[(n - 1) & hash]即找到hash值在table数组中所对应的位置（这里可以看看put方法，在放置的时候就是按照这个方式来进行放置的）
     if ((tab = table) != null && (n = tab.length) > 0 &&
         (first = tab[(n - 1) & hash]) != null) {
@@ -320,7 +320,8 @@ public V remove(Object key) {
      */
 final Node<K,V> removeNode(int hash, Object key, Object value,
                                boolean matchValue, boolean movable) {
-    // 定义tab数组，定义Node节点p，定义tab数组的长度为n，定义索引index
+    // 定义tab数组，定义Node节点p（P节点在下面的作用主要是顶级节点或者父节点）
+    // 定义tab数组的长度为n，定义索引index
     Node<K,V>[] tab; Node<K,V> p; int n, index;
     // 获取table作为tab,数组的长度为n,p为该key对应的hash所在tab中的位置。index为索引
     if ((tab = table) != null && (n = tab.length) > 0 &&
@@ -330,35 +331,51 @@ final Node<K,V> removeNode(int hash, Object key, Object value,
         // 校验该节点的hash是否相等，且key是否相等
         if (p.hash == hash &&
             ((k = p.key) == key || (key != null && key.equals(k))))
-            // 如果相等，则将p节点赋值给node节点
+            // 如果相等，则将p节点指向node节点
             node = p;
-        // 如果不相等，则继续向下遍历，直到相等找到key对应的Node节点并赋值给node
+        // 如果不相等，则继续向下遍历，直到相等找到key对应的Node节点并指向给node
         else if ((e = p.next) != null) {
+            // 如果节点的类型是树形结构，则进行树型的查找
             if (p instanceof TreeNode)
                 node = ((TreeNode<K,V>)p).getTreeNode(hash, key);
             else {
+                // 如果不是树形的节点，那么就遍历链表
                 do {
                     if (e.hash == hash &&
                         ((k = e.key) == key ||
                             (key != null && key.equals(k)))) {
+                        // 如果相等，则将当前节点指向给node。
                         node = e;
+                        // 注意，这里是break。就导致了下面的 p=e 的p的指针位置是node节点的上一个节点
                         break;
                     }
+                    // p的指针位置是node节点的父节点
                     p = e;
                 } while ((e = e.next) != null);
             }
         }
+        // 如果节点不为null且如果需要进行值陪陪且通过，则将该节点在Map中进行移除
         if (node != null && (!matchValue || (v = node.value) == value ||
                                 (value != null && value.equals(v)))) {
+            // 如果是树状节点
             if (node instanceof TreeNode)
+                // 则进行移除树状节点
                 ((TreeNode<K,V>)node).removeTreeNode(this, tab, movable);
+            // 走到这里说明不是树状节点。这个时候就校验node节点和p节点是不是同一个
             else if (node == p)
+                // 如果是同一个,即时顶级节点，这个时候就将node的next节点的内存地址指向该数组的索引位置
+                // 这样就相当于将这个节点移除了
                 tab[index] = node.next;
             else
+                // 如果不是顶级节点。将父节点的子节点的指针指向node节点的next节点。
+                // 就是相当于将node节点进行移除
                 p.next = node.next;
+            // 修改版本计数更改
             ++modCount;
             --size;
+            // HashMap的这个方法是空方法。为了让子类根据需要进行重写
             afterNodeRemoval(node);
+            // 将node节点返回
             return node;
         }
     }
