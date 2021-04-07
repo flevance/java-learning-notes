@@ -1,4 +1,7 @@
-# HashMap源码学习
+# HashMap
+
+面试中可能有的坑：
+红黑树的进化条件：当Node链表的长度大于树化阈值8且Map中总元素的数量大于树的最小容量64的时候，才会进行红黑树的树化操作
 
 ## 类图
 
@@ -9,35 +12,63 @@
 ## 常量
 
 ~~~ java
-// 初始容量大小（16）
+
+// 通过table数组，对数据进行存放。
+// 根据key计算出在数组中的位置。,然后将key和value形成一个Node节点，进行存放
+// key的索引计算方式是：tab[(table.length - 1) & hash]确定。即将数组的大小减一和key的hash值相与操作
+transient Node<K,V>[] table;
+
+// table数组初始容量大小（16）
 static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; 
 
-// 最大容量 1073741824
+// table数组最大容量 1073741824
 static final int MAXIMUM_CAPACITY = 1 << 30;
 
-// 默认负载因子 0.75
+// table数组扩容操作默认负载因子 0.75
 static final float DEFAULT_LOAD_FACTOR = 0.75f;
 
-// 树化阈值 8 
+// Node链表的树化阈值 8 
 static final int TREEIFY_THRESHOLD = 8;
 
-// 树退化阈值
+// Node链表的树退化阈值
 static final int UNTREEIFY_THRESHOLD = 6;
 
-// 树的最小容量
+// Node链表的进化为树的最小容量
+// 红黑树的进化条件：当Node链表的长度大于树化阈值8且Map中总元素的数量大于64的时候，才会进行红黑树的树化操作
 static final int MIN_TREEIFY_CAPACITY = 64;
+
+~~~
+
+## Node内部类
+
+HashMap通过维护着这个Node完成了当key在tab数组中的索引位置相等时，数据的存放问题  
+> 两个key在table数组中的存放位置是有可能相同的，当相同的时候，就是通过了Node形成链表。
+> 相同的原因是：tab[(table.lenth - 1) & hash]操作。&操作符：同为1则为1，否则为0。所有位置很有可能重复
+
+### 属性
+
+~~~ java
+
+// Node的hash值
+final int hash;
+// key的对象
+final K key;
+// value的对象
+V value;
+// next节点
+Node<K,V> next;
 
 ~~~
 
 ## PUT方法
 
-在Put的时候，首先根据key获取到该key在tab数组中对应的位置（tab[(n - 1) & hash]。  
+在Put的时候，首先根据key获取到该key在tab数组中对应的位置（tab[(table.lenth - 1) & hash]。  
 然后判断数组中的该位置是否存在Node元素：  
     如果不存在，就讲vlue和key形成Node节点放置在该位置  
     如果已经存在Node元素，这个是否就形成链表。如果链表中的数据比较多（>树化阈值8），则会进行树化形成红黑树  
 
 可以参考链接：
-https://blog.csdn.net/lukabruce/article/details/98033819
+<https://blog.csdn.net/lukabruce/article/details/98033819>
 
 ~~~ java
 
@@ -297,7 +328,12 @@ final Node<K,V> getNode(int hash, Object key) {
 
 ## Remove方法
 
-remove方法
+remove方法：  
+通过key的hash值首先找到在数组中的位置。然后在对应位置的Node节点上找到与key对应的value。
+如果value是顶级节点，则将数组的该位置的Node指针指向value的下一个节点
+如果不是顶级节点，则将父节点的next节点执行value的下一级节点
+对于是红黑树的情况，则将该节点在树中进行移除
+最后将value进行返回
 
 ~~~ java
 // remove方法，传入的为需要remove的key
@@ -309,7 +345,7 @@ public V remove(Object key) {
 }
 
 /**
-     * Map 移除的具体实现放
+     * Map 移除的具体实现方法
      *
      * @param hash 需要移除的key的Hash值
      * @param key 需要移除的key
