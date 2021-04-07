@@ -1,4 +1,4 @@
-# ArrayList源码学习
+# ArrayList
 
 ## 类图
 
