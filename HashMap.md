@@ -1,7 +1,9 @@
 # HashMap
 
 面试中可能有的坑：
-红黑树的进化条件：当Node链表的长度大于树化阈值8且Map中总元素的数量大于树的最小容量64的时候，才会进行红黑树的树化操作
+
+1. 红黑树的进化条件：当Node链表的长度大于树化阈值8且Map中总元素的数量大于树的最小容量64的时候，才会进行红黑树的树化操作
+2. HashMap的key可以为null
 
 ## 类图
 
@@ -17,6 +19,13 @@
 // 根据key计算出在数组中的位置。,然后将key和value形成一个Node节点，进行存放
 // key的索引计算方式是：tab[(table.length - 1) & hash]确定。即将数组的大小减一和key的hash值相与操作
 transient Node<K,V>[] table;
+// 扩容的阈值,默认是初始容量+负载因子。即16*0.75。当超过这个值的时候，就会进行扩容
+int threshold;
+// 负载因子
+final float loadFactor;
+
+// 标记map中存放元素的数量，方便获取Map的大小
+transient int size;
 
 // table数组初始容量大小（16）
 static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; 

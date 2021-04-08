@@ -1,3 +1,5 @@
+# InfluxDb
+
 ## schema常用语法
 
 ~~~ sql
@@ -22,22 +24,19 @@ SHOW FIELD KEYS
 | timestamp        | 时间戳                           | id            |
 | retention policy | InfluxDB保存数据的时间           |               |
 
-
-
 ## 常用操作
 
 插入
-~~~
+
+~~~ sql
 insert <measurement>[,<tag-key>=<tag-value>...] <field-key>=<field-value>[,<field2-key>=<field2-value>...] [unix-nano-timestamp]
 ~~~
 
 查询
 
-~~~
+~~~ sql
 SELECT <stuff> FROM <measurement_name> WHERE <some_conditions>
 ~~~
-
-
 
 ## 注意事项
 
@@ -57,34 +56,24 @@ SELECT <stuff> FROM <measurement_name> WHERE <some_conditions>
 
 会大大更新数据库的IO。如果tag列过多，就会导致增加很多的series。导致查询速度变慢。tag的数据长度也建议尽量短
 
-
-
 ## 拓展
 
 ### RP 数据保留时间
 
 建库是直接指定（支持w周，d天，h小时）(数据保留一年的推荐语句)
 
-~~~
+~~~ sql
 CREATE RETENTION POLICY "on_year" ON "database_name" DURATION 52w REPLICATION 1 SHARD DURATION 1d DEFAULT
 ~~~
 
 插入时指定
 
-```
+~~~ sql
  INTO "rp_name"."measurement" tag fiel time
-```
+~~~
 
-* 数据保留策略的网址介绍：https://www.cnblogs.com/ilifeilong/p/12746149.html
-* 一些使用注意事项：https://developer.aliyun.com/article/758923?spm=a2c6h.14164896.0.0.2d946b37xSY3X7
-* 性能和调优：https://blog.csdn.net/eric_sunah/article/details/76274188?utm_medium=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-1.control&depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-1.control
-* 一些查询语法注意事项：https://blog.csdn.net/lifen0908/article/details/105293839/
-* GROUP BY的相关介绍：https://www.cnblogs.com/suhaha/archive/2019/10/17/11692281.html
-
-（一个入库，一个查询）
-
-1. 测温
-2. 环流
-3. 局放
-4. 载流量
-5. 环境监测
+* 数据保留策略的网址介绍：  <https://www.cnblogs.com/ilifeilong/p/12746149.html>
+* 一些使用注意事项：  <https://developer.aliyun.com/article/758923?spm=a2c6h.14164896.0.0.2d946b37xSY3X7>
+* 性能和调优：<https://blog.csdn.net/eric_sunah/article/details/76274188?utm_medium=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-1.control&depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-1.control>
+* 一些查询语法注意事项：<https://blog.csdn.net/lifen0908/article/details/105293839>
+* GROUP BY的相关介绍：<https://www.cnblogs.com/suhaha/archive/2019/10/17/11692281.html>
