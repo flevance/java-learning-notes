@@ -116,33 +116,51 @@ private void addEntry(int hash, K key, V value, int index) {
         index = (hash & 0x7FFFFFFF) % tab.length;
     }
 
-    // Creates the new entry.
-    @SuppressWarnings("unchecked")
+    // 获取该索引位置上原先的元素
     Entry<K,V> e = (Entry<K,V>) tab[index];
+    // 创建一个新的Entry节点指向table数组的该索引位
     tab[index] = new Entry<>(hash, key, value, e);
+    // HashTable的count数+1
     count++;
 }
+~~~
 
+## reHash()方法
+
+reHash将HashTable中的table进行扩容并重新进行Hash操作
+
+~~~ java
+// 对table进行扩容并重新进行hash操作
 protected void rehash() {
+    // 获取旧的数组容量
     int oldCapacity = table.length;
+    // 将旧的数据进行暂存
     Entry<?,?>[] oldMap = table;
 
-    // overflow-conscious code
+    // 新的容量为 旧的容量左移1位 + 1(就是旧的大小 * 2 + 1)
     int newCapacity = (oldCapacity << 1) + 1;
+    // 如果新的容量比Array的最大容量要大
     if (newCapacity - MAX_ARRAY_SIZE > 0) {
+        // 如果旧的容量等于数组的最大容量
         if (oldCapacity == MAX_ARRAY_SIZE)
-            // Keep running with MAX_ARRAY_SIZE buckets
+            // 那么就保持数组的容量大小不变
             return;
+        // 否则就设定为最大的数组容量
         newCapacity = MAX_ARRAY_SIZE;
     }
+    // 使用心得数组容量重新创建一个Entry数组
     Entry<?,?>[] newMap = new Entry<?,?>[newCapacity];
-
+    // 修改计数+1
     modCount++;
+    // 根据新的容量和负载因子算出来新的阈值
     threshold = (int)Math.min(newCapacity * loadFactor, MAX_ARRAY_SIZE + 1);
+    // 将新创建的数组指向原先的数组
     table = newMap;
-
+    // 遍历原先的数组
     for (int i = oldCapacity ; i-- > 0 ;) {
+        // 获取原先数组的该位置的数据，并依次遍历链表
         for (Entry<K,V> old = (Entry<K,V>)oldMap[i] ; old != null ; ) {
+            // 这里就是重新获取Hash值，然后获取索引位置，然后重新放置在对应的位置上
             Entry<K,V> e = old;
             old = old.next;
 
